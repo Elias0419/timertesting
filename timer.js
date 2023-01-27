@@ -7,13 +7,16 @@
 // @match        https://app.prolific.co/studies*
 // @require      https://cdnjs.cloudflare.com/ajax/libs/arrive/2.4.1/arrive.min.js
 // @require      https://code.jquery.com/jquery-3.6.3.js
+// @require      https://code.jquery.com/ui/1.13.2/jquery-ui.min.js
 // @require      https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js
 // @resource     https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        GM_addStyle
 // ==/UserScript==
+let hourlyRate = "<center>-</center>";
 let currentTimeStamp = Date.now();
 let reserveButtonClicked = false;
+let titleLatest = " ";
 let taskPayInGBP = 0;
 let timer = "00:00";
 let elapsedTime = 0;
@@ -22,8 +25,7 @@ let startTime = 0;
 let exchangeRate;
 let endTime = 0;
 let title = " ";
-let hourlyRate = "<center>-</center>";
-
+let taskVariables;
 
 
 function localStoreGet()
@@ -43,6 +45,7 @@ function localStoreGet()
 	}
 };
 localStoreGet();
+
 
 function getExchangeRate()
 {
@@ -66,12 +69,14 @@ function getExchangeRate()
 	}
 }
 
+
 function localStoreSet(exchangeRateString)
 {
 	console.log(exchangeRate + "  localStoreSet");
 	localStorage.setItem("exchangeRate", exchangeRate);
 	localStorage.setItem("timestamp", JSON.stringify(currentTimeStamp));
 }
+
 
 function calculateHourly(exchangeRateString, elapsedTimeString)
 {
@@ -94,51 +99,54 @@ function stopClock()
     document.title = "Prolific"
 }
 
-const getTaskInfoPre = function ()
-{
-	console.log("getTaskInfoPre");
-	document.arrive('[data-testid="study-tag-reward"]', function ()
-	{
-		getTaskInfo()
-	})
 
-	function getTaskInfo()
-	{
-		let rewardElem = document.querySelector('[data-testid="study-tag-reward"]');
-		let reward = rewardElem.innerText;
-		console.log(reward)
+const getTaskInfoPre = function () {
+  console.log("getTaskInfoPre");
+  document.arrive('[data-testid="study-tag-reward"]', function () {
+    getTaskInfo()
+  })
 
-		let requesterElem = document.querySelector('[data-testid="host"]');
-		let requesterElemLong = requesterElem.innerText;
-		let requester = requesterElemLong.substring(3);
-		console.log(requester);
 
-		let titleElem = document.querySelector('[data-testid="title"]');
-		let title = titleElem.innerText;
-		console.log(title);
+function getTaskInfo() {
+    console.log("getTaskInfo");
+    let rewardElem = document.querySelector('[data-testid="study-tag-reward"]');
+    let reward = rewardElem.innerText;
+    console.log(reward)
 
-		// testFunction({title, reward, requester});
-		clearVariables(
-		{
-			title,
-			reward,
-			requester
-		})
-	}
+    let requesterElem = document.querySelector('[data-testid="host"]');
+    let requesterElemLong = requesterElem.innerText;
+    let requester = requesterElemLong.substring(3);
+    console.log(requester);
+
+    let titleElem = document.querySelector('[data-testid="title"]');
+    let title = titleElem.innerText;
+    console.log(title);
+
+    taskVariables = {
+        title,
+        reward,
+        requester
+    }
+     //latestSubmission({taskVariables})
+     // clearVariables({ taskVariables})
+    console.log("task variables creation   " + taskVariables.title)
+  }
 }
+
 
 function resetReserveButton()
 {
 	console.log("reserve reset")
 	let reserveButton = document.querySelector('[data-testid="reserve"]');
 	if (reserveButton)
-	{
+	{ console.log("reserve if")
 		reserveButton.removeEventListener("click", function ()
 		{
 			reserveButtonClicked = false;
 		});
 	}
 }
+
 
 function clockMath()
 {
@@ -162,26 +170,10 @@ function clockMath()
 const updateTimerDisplay = async () => {
   const [timer, hourlyRate] = await Promise.all([clockMath(), calculateHourly()]);
   if (clock) {
-    $("#timer").html("<center>"+ timer + "<br>$" + hourlyRate +"/hr</center>");
+    $("#timer").html("<a href='#' data-toggle='tooltip' data-html='true' data-placement='left' title="+titleLatest+"><center>"+ timer + "<br>" + hourlyRate +"</center></a>​");
   }
 }
-/*const updateTimerDisplay = async (hourlyRate) =>
-{
-	const timer = await clockMath()
-	if (clock)
-	{
-		$("#timer").html(timer + "<br>" + hourlyRate);
-	}
-}*/
-/*
-const updateHourlyDisplay = async () =>
-{
-	const hourlyRate = await calculateHourly()
-	if (clock)
-	{console.log("hourly")
-		$("#timer").html(hourlyRate);
-	}
-*/
+
 /*
 
 function testFunction({title, reward, requester}){
@@ -190,47 +182,64 @@ function testFunction({title, reward, requester}){
 }
 */
 
-function clearVariables(
-{
-	title,
-	reward,
-	requester
-})
-{if(title){
+function latestSubmission(taskVariables){
+    console.log("latest submissions");
+    if(taskVariables){
+        console.log('latest submissions if')
+   let titleLatest = taskVariables.title;
+   let requesterLatest = taskVariables.requester;
+   let rewardLatest = taskVariables.reward;
+   let latestTaskVariables = {
+        titleLatest,
+        rewardLatest,
+        requesterLatest
+    }
+     console.log("taskvariables test  "+titleLatest+"  "+requesterLatest+"   "+rewardLatest)
+        upDateToolTip(latestTaskVariables);
+        clearVariables(taskVariables);
+        return titleLatest;
+   }}
+
+
+
+function clearVariables(taskVariables){
+    console.log("clearVariables init")
+    if(taskVariables){
+        console.log("clearVariables if")
+let title = taskVariables.title;
+let reward = taskVariables.reward;
+let requester = taskVariables.requester;
+console.log("clearvariables1 test " + title + " " + reward + " " + requester);
+    if(title){
 	title = "";}
  if(reward){
 	reward = "";}
  if (requester){
 	requester = "";}
-	console.log("clearvariables test " + title + " " + reward + " " + requester);
-}
+	console.log("clearvariables2 test " + title + " " + reward + " " + requester);
+}}
+
 
 function clockReset()
 {
 	timer = "00:00";
 }
 
+
 function timerTabOn(){
 document.title = timer;
 }
-/*function timerTabOff(){
-    console.log("timerTabOff");
-document.title = "Prolific";
-    console.log(document.title);
-}*/
 
-function latestSubmission(requesterString, rewardString, titleString){
-    console.log("latest submissions");
-   let titleLatest = titleString;
-   let requesterLatest = requesterString;
-   let rewardLatest = rewardString
-   console.log(titleLatest+"  "+requesterLatest+"   "+rewardLatest)
-   }
 
+function upDateToolTip (latestTaskVariables){
+console.log("tooltip");
+$("#timer").html("<a href='#' data-toggle='tooltip' data-html='true' data-placement='left' title='" + latestTaskVariables.titleLatest.replace(/'/g, "&#39;") + "    " + latestTaskVariables.rewardLatest.replace(/'/g, "&#39;") + '   ' + latestTaskVariables.requesterLatest.replace(/'/g, "&#39;") + "'><center>" + timer + '   $' + hourlyRate + "/hr</center></a>");
+}
 
 
 
 /********************************************************************************************************************************/
+
 
 document.arrive(".help-centre", function ()
 {  $("timer").tooltip({ selector: '[data-toggle=tooltip]',  });
@@ -240,12 +249,9 @@ document.arrive(".help-centre", function ()
 	let anchorElement = anchor.parentNode;
 	let timerDiv = document.createElement("div");
 	timerDiv.id = "timer";
-	timerDiv.innerHTML = "<a href='#' data-toggle='tooltip' data-placement='left' title='Some tooltip text!'><center>"+ timer + "<br>" + hourlyRate +"</center></a>"
-
-
-
-
-	timerDiv.style.paddingTop = "5px"
+	timerDiv.innerHTML = "<a href='#' data-toggle='tooltip' data-placement='left' title=Timer"+titleLatest+"><center>"+ timer + "<br>" + hourlyRate +"</center></a>"
+ 
+    timerDiv.style.paddingTop = "5px"
     timerDiv.style.paddingBottom = "5px"
     timerDiv.style.paddingLeft = "20px"
     timerDiv.style.paddingRight = "20px"
@@ -253,14 +259,13 @@ document.arrive(".help-centre", function ()
 	timerDiv.style.background = "#FFFFFF";
 	timerDiv.style.opacity = "0.75";
 	anchorElement.insertBefore(timerDiv, anchor);
-	//return timerDiv;
-
-    //$('#timer').tooltip()
+	
 })
 
 
-
 /********************************************************************************************************************************/
+
+
 console.log(clock + " before");
 const startTimer = async () =>
 {
@@ -272,13 +277,12 @@ const startTimer = async () =>
 	let timerInterval = setInterval(function ()
 	{
 		elapsedTime = new Date() - startTime;
-		//calculateHourly(exchangeRate);
-		//console.log(elapsedTime+"  line127")
-		if (clock)
+
+        if (clock)
 		{
 			updateTimerDisplay();
             timerTabOn();
-			//updateHourlyDisplay();
+			;
 			return elapsedTime;
 		}
 	}, 1000);
@@ -291,16 +295,17 @@ document.arrive('[data-testid="dialog-start-study"]', function ()
 	let startButton = document.querySelector('[data-testid="dialog-start-study"]');
 	startButton.addEventListener("click", function ()
 	{
-		clockReset()
+		clockReset();
 		clock = true;
 		startTimer();
 
 	})
 })
 
+
 document.arrive('[data-testid="reserve"]', function ()
 
-	{
+	{const greeting = new Notification('reserve found');
 		console.log("found reservebutton");
 
 		let reserveButtons = document.querySelectorAll('[data-testid="reserve"]');
@@ -314,9 +319,7 @@ document.arrive('[data-testid="reserve"]', function ()
 				resetReserveButton()
 				getTaskInfoPre()
 			});
-		}
-	})
-
+	}})
 
 
 
@@ -325,22 +328,19 @@ document.arrive('[data-testid="complete-button"]', function () {
 	console.log("found completebutton")
     let completeButton = document.querySelector('[data-testid="complete-button"]');
     completeButton.addEventListener("click", function () {
-
+latestSubmission(taskVariables);
 		stopClock();
-        latestSubmission()
-		clearVariables();
-       
-	})
+      })
 })
 
 
 document.arrive('[data-testid="cancel-reservation"]', function () {
     let cancelResButton = document.querySelector('[data-testid="cancel-reservation"]');
     cancelResButton.addEventListener("click", function (){
-	resetReserveButton()
-         latestSubmission()
-    clearVariables();
-	console.log("found cancelresbutton")
+	resetReserveButton();
+       latestSubmission(taskVariables);
+      stopClock();  
+	console.log("found cancelresbutton");
 	})
 });
 
@@ -350,12 +350,10 @@ document.arrive('[data-testid="cancel-study-button"]', function () {
 	console.log("found cancelstudybutton")
 	let cancelButton = document.querySelector('[data-testid="cancel-study-button"]');
 	cancelButton.addEventListener("click", function () {
-
+        console.log("cancel pressed")
+ latestSubmission(taskVariables)
 		stopClock();
-         latestSubmission()
-		clearVariables();
-        
-	})
+        })
 });
 
 
@@ -366,20 +364,18 @@ document.arrive('h2.title[data-v-47af0476=""]', function () {
 	console.log("found autocomplete")
 	let autoCompleteIndicator = document.querySelector('h2.title[data-v-47af0476=""]');
 	if (autoCompleteIndicator && autoCompleteIndicator.textContent === "Awaiting review") {
-		stopClock();
-         latestSubmission()
-        clearVariables();
-        
-	}
+        console.log("autocomplete submission")
+		latestSubmission(taskVariables);
+        stopClock();
+        }
 });
+
 
 document.arrive('h2.title[data-v-82025cd6=""]', function () {
 	console.log("found expiration")
 	let expirationIndicator = document.querySelector('h2.title[data-v-82025cd6=""]');
 	if (expirationIndicator && expirationIndicator.textContent === "Reservation expired") {
 		stopClock();
-         latestSubmission()
-        clearVariables();
-       
-	}
+         latestSubmission(taskVariables)
+       }
 });
